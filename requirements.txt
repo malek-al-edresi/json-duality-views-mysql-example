@@ -1,0 +1,4 @@
+mysql-connector-python>=8.3.0
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-ollama>=0.3.0
