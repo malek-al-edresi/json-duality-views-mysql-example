@@ -6,14 +6,14 @@ to answer natural-language questions about customer support tickets.
 
 Requirements:
     pip install langchain-ollama langchain-core langchain
-    ollama pull qwen3:4b
+    ollama pull llama3.2
 """
 
 import json
 import sys
 
 import mysql.connector
-from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langgraph.prebuilt import create_react_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
 from langchain_ollama import ChatOllama
@@ -100,7 +100,7 @@ def create_support_agent():
 
     # Local LLM via Ollama — no API keys needed
     llm = ChatOllama(
-        model="qwen3:4b",
+        model="llama3.2",
         temperature=0,
     )
 
@@ -108,27 +108,19 @@ def create_support_agent():
     tools = [query_customer_tickets, query_ticket_details]
 
     # System prompt for the agent
-    prompt = ChatPromptTemplate.from_messages([
-        (
-            "system",
-            "You are a helpful customer support analyst. You have access to a "
-            "MySQL database with customer and ticket data exposed through JSON "
-            "Duality Views. Use the available tools to query the database and "
-            "answer questions accurately. Always base your answers on the actual "
-            "data returned by the tools. Be concise and professional."
-        ),
-        ("human", "{input}"),
-        ("placeholder", "{agent_scratchpad}"),
-    ])
+    system_message = (
+        "You are a helpful customer support analyst. You have access to a "
+        "MySQL database with customer and ticket data exposed through JSON "
+        "Duality Views. Use the available tools to query the database and "
+        "answer questions accurately. Always base your answers on the actual "
+        "data returned by the tools. Be concise and professional."
+    )
 
     # Create the agent
-    agent = create_tool_calling_agent(llm, tools, prompt)
-    agent_executor = AgentExecutor(
-        agent=agent,
+    agent_executor = create_react_agent(
+        model=llm,
         tools=tools,
-        verbose=True,
-        handle_parsing_errors=True,
-        max_iterations=5,
+        prompt=system_message,
     )
 
     return agent_executor
@@ -138,7 +130,7 @@ def main():
     """Interactive agent loop."""
     print("=" * 60)
     print("  AI Support Agent (Ollama + LangChain)")
-    print("  Model: qwen3:4b (local, offline)")
+    print("  Model: llama3.2 (local, offline)")
     print("  Type 'quit' to exit.")
     print("=" * 60)
 
@@ -167,12 +159,12 @@ def main():
             break
 
         try:
-            result = agent.invoke({"input": question})
-            print(f"\n📋 Answer: {result['output']}")
+            result = agent.invoke({"messages": [("user", question)]})
+            print(f"\n📋 Answer: {result['messages'][-1].content}")
         except Exception as e:
             print(f"\n[ERROR] Agent failed: {e}")
             print("Make sure Ollama is running: ollama serve")
-            print("And the model is downloaded: ollama pull qwen3:4b")
+            print("And the model is downloaded: ollama pull llama3.2")
 
 
 if __name__ == "__main__":
