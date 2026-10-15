@@ -291,5 +291,3 @@ curl http://localhost:8444/support/tickets/1
 MIT License — See [LICENSE](LICENSE) for details.
 
 ---
-
-**Built for the MySQL JSON Duality Views Bounty** 🏆
